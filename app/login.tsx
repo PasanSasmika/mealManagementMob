@@ -41,7 +41,7 @@ export default function LoginScreen() {
     setAuthToken(token);
 
     if (user.role === 'CANTEEN') {
-    //   router.replace('/canteen-dashboard');
+      router.replace('/canteen-dashboard');
     } else {
       router.replace('/employee-dashboard');
     }
