@@ -26,4 +26,8 @@ requestNow: (data: { action: boolean }) => api.post('/meals/request-now', data),
   verifyOtp: (requestId: string, otp: string) => api.post('/meals/verify-otp', { requestId, otp }),
 
   selectPayment: (requestId: string, paymentType: string) => api.patch('/meals/select-payment', { requestId, paymentType }),
+
+choosePayment: (requestId: string, paymentType: string) => 
+    api.patch('/meals/select-payment', { requestId, paymentType }),
+
 };
