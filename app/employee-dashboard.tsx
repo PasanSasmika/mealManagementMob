@@ -1,0 +1,106 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Utensils, QrCode, LogOut, User } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient'; 
+import "../global.css";
+
+export default function EmployeeDashboard() {
+  const router = useRouter();
+  const [firstName, setFirstName] = useState("User");
+
+  useEffect(() => {
+    const getuserData = async () => {
+      const name = await AsyncStorage.getItem('userFirstName');
+      if (name) setFirstName(name);
+    };
+    getuserData();
+  }, []);
+
+  const handleLogout = async () => {
+    await AsyncStorage.clear();
+    router.replace('/login');
+  };
+
+  return (
+    <View className="flex-1 bg-gray-50">
+      <StatusBar barStyle="light-content" />
+      
+      {/* Header Section */}
+      <LinearGradient
+        colors={['#059669', '#10b981']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        className="pt-16 pb-12 px-8 rounded-b-[50px] shadow-2xl shadow-emerald-900"
+      >
+        <View className="flex-row justify-between items-start">
+          <View className="flex-row items-center">
+            <View className="bg-white/20 p-3 rounded-2xl border border-white/30 mr-4">
+              <User size={32} color="white" />
+            </View>
+            <View>
+              <Text className="text-emerald-50 font-medium text-xs tracking-wider">
+                Welcome / ආයුබෝවන් / வரவேற்கிறோம்
+              </Text>
+              <Text className="text-3xl font-black text-white capitalize">
+                {firstName}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+
+      <ScrollView 
+        className="flex-1 px-6 -mt-8" 
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="gap-y-6 pt-12 pb-6">
+          
+          {/* Main Action: Select Menu */}
+          <TouchableOpacity 
+            onPress={() => router.push('/book-meal')}
+            className="bg-white p-8 rounded-[40px] shadow-xl shadow-slate-200 border border-slate-100 flex-row items-center active:bg-slate-50"
+          >
+            <View className="bg-emerald-50 p-5 rounded-3xl mr-6">
+              <Utensils size={36} color="#059669" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-2xl font-black text-slate-800">Book Menu</Text>
+              <Text className="text-slate-500 font-bold text-xs mt-1">මෙනුව තෝරන්න</Text>
+              <Text className="text-slate-400 font-medium text-[10px]">மெனுவைத் தேர்ந்தெடுக்கவும்</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Main Action: Get My Meal */}
+          <TouchableOpacity 
+            onPress={() => router.push('/request-now')}
+            className="bg-emerald-600 p-8 rounded-[40px] shadow-2xl shadow-emerald-200 flex-row items-center active:bg-emerald-700"
+          >
+            <View className="bg-white/20 p-5 rounded-3xl mr-6">
+              <QrCode size={36} color="white" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-2xl font-black text-white">Get My Meal</Text>
+              <Text className="text-emerald-100 font-bold text-xs mt-1">මගේ ආහාරය ලබා ගන්න</Text>
+              <Text className="text-emerald-50 font-medium text-[10px]">எனது உணவைப் பெறுங்கள்</Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Refined Logout Button */}
+          <TouchableOpacity 
+            onPress={handleLogout}
+            className="mt-28 border-2 border-red-100 bg-red-50/30 p-6 rounded-[35px] flex-row items-center justify-center"
+          >
+            <LogOut size={22} color="#ef4444" className="mr-4" />
+            <View className="items-center">
+              <Text className="text-red-600 font-black text-lg">Logout</Text>
+              <Text className="text-red-400 font-bold text-[10px]">පද්ධතියෙන් ඉවත් වන්න / வெளியேறவும்</Text>
+            </View>
+          </TouchableOpacity>
+
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
