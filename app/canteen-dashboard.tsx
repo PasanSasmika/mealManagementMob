@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { api } from '../src/services/api';
-import { User, Check, X, Coffee, ChevronLeft } from 'lucide-react-native';
+import { User, Check, X, Coffee } from 'lucide-react-native';
 import "../global.css";
-import {  useRouter } from 'expo-router';
 
 export default function CanteenDashboard() {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
 
   const fetchRequests = async () => {
   try {
@@ -59,9 +57,6 @@ export default function CanteenDashboard() {
 
   return (
     <View className="flex-1 bg-slate-100 px-6 pt-16">
-        <TouchableOpacity onPress={() => router.back()} className="mb-4">
-        <ChevronLeft size={28} color="#059669" />
-      </TouchableOpacity>
       <View className="mb-6 flex-row items-center justify-between">
         <View>
           <Text className="text-3xl font-black text-slate-900">Meal Queue</Text>
