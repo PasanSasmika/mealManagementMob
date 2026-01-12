@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { mealService } from '../src/services/api';
-import { Utensils, Clock, ChevronLeft, Send, Lock, AlertCircle, Ticket } from 'lucide-react-native';
+import { Utensils, Clock, ChevronLeft, Send, Lock, AlertCircle, Ticket, CheckCircle2 } from 'lucide-react-native';
 import "../global.css";
 
 export default function RequestNowScreen() {
@@ -12,7 +12,9 @@ export default function RequestNowScreen() {
   const [hasError, setHasError] = useState(false); 
   const [currentTime, setCurrentTime] = useState(new Date());
   
-  // Fix for the TypeScript 'Timeout' error
+  const [otpInput, setOtpInput] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  
   const pollingInterval = useRef<any>(null);
 
   useEffect(() => {
@@ -24,7 +26,6 @@ export default function RequestNowScreen() {
     };
   }, []);
 
-  // FIXED: Added { action: false } so it doesn't trigger the meal request on load
   const fetchInitialStatus = async () => {
     try {
       const response = await mealService.requestNow({ action: false });
@@ -44,7 +45,6 @@ export default function RequestNowScreen() {
     if (pollingInterval.current) return;
     pollingInterval.current = setInterval(async () => {
       try {
-        // Polling also uses { action: false } to just check for updates
         const response = await mealService.requestNow({ action: false });
         const updatedMeals = response.data.data;
         setMeals(updatedMeals);
@@ -64,7 +64,6 @@ export default function RequestNowScreen() {
     }
   };
 
-  // FIXED: Added { action: true } so the backend knows the user actually clicked the button
   const handleRequestMeal = async () => {
     setLoading(true);
     setHasError(false);
@@ -92,6 +91,30 @@ export default function RequestNowScreen() {
     }
   };
 
+  const handleVerifyOTP = async () => {
+    if (otpInput.length < 4) {
+      Alert.alert("Wait", "Please enter the 4-digit code.");
+      return;
+    }
+    setVerifying(true);
+    try {
+      await mealService.verifyOtp(currentMealId, otpInput);
+      
+      // FIX: Standard Expo Router navigation to the dynamic route
+      // Path must exist at app/pay-select/[id].tsx
+      router.push({
+        pathname: "/pay-select/[id]",
+        params: { id: currentMealId }
+      });
+      
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || "Invalid OTP. Please try again.";
+      Alert.alert("Verification Failed", errorMsg);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const currentHour = currentTime.getHours();
   const activeMealType = currentHour < 12 ? 'BREAKFAST' : 'LUNCH';
   const currentMeal = meals.find(m => m.mealType === activeMealType);
@@ -112,7 +135,6 @@ export default function RequestNowScreen() {
       <Text className="text-emerald-600 font-bold">ආහාර වේලෙහි තත්ත්වය</Text>
       <Text className="text-emerald-500 text-xs mb-8">உணவு நிலை</Text>
 
-      {/* 1. Meal Type Cards */}
       <View className="gap-y-4 mb-8">
         {mealTypes.map((type) => {
           const isLocked = type.isMorning ? currentHour >= 12 : currentHour < 12;
@@ -154,35 +176,52 @@ export default function RequestNowScreen() {
         })}
       </View>
 
-      {/* 2. OTP and Action Button Container */}
       {!hasError ? (
         <View className="bg-white rounded-[40px] p-8 shadow-xl shadow-emerald-200 border border-emerald-100">
           
-          {/* OTP VIEW: Only shows when Canteen accepts */}
           {currentMeal?.status === 'ACCEPTED' && (
-            <View className="mb-6 p-6 bg-amber-50 border-2 border-dashed border-amber-300 rounded-3xl items-center">
-              <Ticket size={32} color="#b45309" />
-              <Text className="text-amber-600 font-bold text-xs mt-2 uppercase">Your OTP / ඔබගේ කේතය / உங்கள் குறியீடு</Text>
-              <Text className="text-5xl font-black text-amber-700 tracking-[10px] my-3">{currentMeal.otp}</Text>
-              <Text className="text-[10px] text-amber-500 text-center font-medium">Show this to the canteen staff</Text>
+            <View>
+              <View className="mb-4 p-6 bg-amber-50 border-2 border-dashed border-amber-300 rounded-3xl items-center">
+                <Ticket size={32} color="#b45309" />
+                <Text className="text-amber-600 font-bold text-xs mt-2 uppercase">Your OTP / ඔබගේ කේතය / உங்கள் குறியீடு</Text>
+                <Text className="text-5xl font-black text-amber-700 tracking-[10px] my-3">{currentMeal.otp}</Text>
+                <Text className="text-[10px] text-amber-500 text-center font-medium">Show this to the canteen staff</Text>
+              </View>
+
+              <View className="mb-6">
+                <Text className="text-emerald-800 font-bold text-xs mb-2 ml-2">Type Code Here / කේතය මෙහි ඇතුළත් කරන්න</Text>
+                <TextInput
+                  value={otpInput}
+                  onChangeText={setOtpInput}
+                  placeholder="0000"
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  className="bg-slate-100 rounded-2xl py-4 px-6 text-2xl font-black text-center text-emerald-900 border border-slate-200"
+                />
+              </View>
             </View>
           )}
 
           <TouchableOpacity 
             onPress={() => {
-              if (currentMeal?.status === 'ACCEPTED' || currentMeal?.status === 'OTP_VERIFIED') {
-                router.push(`/verify/${currentMealId}` as any);
+              if (currentMeal?.status === 'ACCEPTED') {
+                handleVerifyOTP(); 
+              } else if (currentMeal?.status === 'OTP_VERIFIED') {
+                router.push({
+                    pathname: "/pay-select/[id]",
+                    params: { id: currentMealId }
+                } as any);
               } else {
                 handleRequestMeal();
               }
             }}
-            disabled={loading || currentMeal?.status === 'ACTIVE' || currentMeal?.status === 'ISSUED'}
+            disabled={loading || verifying || currentMeal?.status === 'ACTIVE' || currentMeal?.status === 'ISSUED'}
             className={`${currentMeal?.status === 'ACTIVE' ? 'bg-slate-400' : 'bg-emerald-600'} w-full py-5 rounded-3xl flex-row items-center justify-center shadow-lg shadow-emerald-400`}
           >
             <View className="items-center">
               <Text className="text-white font-black text-xl uppercase text-center">
                 {currentMeal?.status === 'ACTIVE' ? 'Waiting for Canteen...' : 
-                 currentMeal?.status === 'ACCEPTED' ? 'Enter OTP' : `Request ${activeMealType}`}
+                 currentMeal?.status === 'ACCEPTED' ? (verifying ? 'Verifying...' : 'Submit OTP') : `Request ${activeMealType}`}
               </Text>
               <Text className="text-emerald-100 font-bold text-[10px] text-center">
                 {currentMeal?.status === 'ACTIVE' ? 'කරුණාකර රැඳී සිටින්න / காத்திருக்கவும்' : 
@@ -190,7 +229,7 @@ export default function RequestNowScreen() {
                  'ආහාරය ඉල්ලන්න / உணவைக் கோருங்கள்'}
               </Text>
             </View>
-            {loading ? <ActivityIndicator color="white" className="ml-4" /> : <Send size={24} color="white" className="ml-4" />}
+            {loading || verifying ? <ActivityIndicator color="white" className="ml-4" /> : <Send size={24} color="white" className="ml-4" />}
           </TouchableOpacity>
         </View>
       ) : (
@@ -204,7 +243,6 @@ export default function RequestNowScreen() {
         </View>
       )}
 
-      {/* Real-time Clock */}
       <View className="items-center mt-12 mb-10">
         <Clock size={20} color="#059669" />
         <Text className="text-emerald-800 font-black mt-2 text-2xl">
