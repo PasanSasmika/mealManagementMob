@@ -22,6 +22,6 @@ export const mealService = {
   bookMeals: (selections: any) => api.post('/meals/book', { selections }),
   
   // Other methods...
-  requestNow: () => api.post('/meals/request-now'),
+requestNow: (data: { action: boolean }) => api.post('/meals/request-now', data),
   verifyOtp: (requestId: string, otp: string) => api.post('/meals/verify-otp', { requestId, otp }),
 };

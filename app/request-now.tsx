@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { mealService } from '../src/services/api';
-import { Utensils, Clock, ChevronLeft, Send, Lock, AlertCircle, ShieldCheck } from 'lucide-react-native';
+import { Utensils, Clock, ChevronLeft, Send, Lock, AlertCircle, Ticket } from 'lucide-react-native';
 import "../global.css";
 
 export default function RequestNowScreen() {
@@ -11,58 +11,96 @@ export default function RequestNowScreen() {
   const [meals, setMeals] = useState<any[]>([]);
   const [hasError, setHasError] = useState(false); 
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Fix for the TypeScript 'Timeout' error
+  const pollingInterval = useRef<any>(null);
 
-  // 1. Digital Clock Update
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    fetchInitialStatus();
+    return () => {
+      clearInterval(timer);
+      stopPolling();
+    };
   }, []);
 
-  // 2. Real-time Status Polling
-  // Checks every 3 seconds if the canteen has accepted the request to show the OTP
-  useFocusEffect(
-    useCallback(() => {
-      const pollStatus = setInterval(async () => {
-        try {
-          const response = await mealService.requestNow();
-          if (response.data.data) {
-            setMeals(response.data.data);
-          }
-        } catch (e) { /* silent fail */ }
-      }, 3000);
-      return () => clearInterval(pollStatus);
-    }, [])
-  );
+  // FIXED: Added { action: false } so it doesn't trigger the meal request on load
+  const fetchInitialStatus = async () => {
+    try {
+      const response = await mealService.requestNow({ action: false });
+      const activeMeals = response.data.data;
+      setMeals(activeMeals || []);
+      
+      const currentMeal = activeMeals?.find((m: any) => m.mealType === activeMealType);
+      if (currentMeal?.status === 'ACTIVE') {
+        startPolling();
+      }
+    } catch (e) {
+      console.log("Status fetch failed");
+    }
+  };
 
-  const currentHour = currentTime.getHours();
+  const startPolling = () => {
+    if (pollingInterval.current) return;
+    pollingInterval.current = setInterval(async () => {
+      try {
+        // Polling also uses { action: false } to just check for updates
+        const response = await mealService.requestNow({ action: false });
+        const updatedMeals = response.data.data;
+        setMeals(updatedMeals);
 
+        const currentMeal = updatedMeals.find((m: any) => m.mealType === activeMealType);
+        if (currentMeal && currentMeal.status !== 'ACTIVE') {
+          stopPolling();
+        }
+      } catch (e) { console.log("Polling..."); }
+    }, 3000);
+  };
+
+  const stopPolling = () => {
+    if (pollingInterval.current) {
+      clearInterval(pollingInterval.current);
+      pollingInterval.current = null;
+    }
+  };
+
+  // FIXED: Added { action: true } so the backend knows the user actually clicked the button
   const handleRequestMeal = async () => {
     setLoading(true);
     setHasError(false);
     try {
-      const response = await mealService.requestNow(); 
+      const response = await mealService.requestNow({ action: true }); 
       const activeMeals = response.data.data;
+      
       if (activeMeals && activeMeals.length > 0) {
         setMeals(activeMeals); 
-        Alert.alert("Request Sent", "Waiting for canteen approval...");
+        Alert.alert(
+          "Request Sent / ඉල්ලීම යොමු කළා / கோரிக்கை அனுப்பப்பட்டது",
+          "The canteen can now see your request.",
+          [{ text: "OK" }]
+        );
+        startPolling(); 
       } else {
         setHasError(true);
       }
     } catch (error: any) {
       setHasError(true);
-      Alert.alert("Notice", "No pre-booked meals found.");
+      const msg = error.response?.data?.message || "No pre-booked meals found.";
+      Alert.alert("Notice", msg);
     } finally {
       setLoading(false);
     }
   };
 
+  const currentHour = currentTime.getHours();
+  const activeMealType = currentHour < 12 ? 'BREAKFAST' : 'LUNCH';
+  const currentMeal = meals.find(m => m.mealType === activeMealType);
+  const currentMealId = currentMeal?._id;
+
   const mealTypes = [
     { id: 'BREAKFAST', si: 'උදේ ආහාරය', ta: 'காலை உணவு', isMorning: true },
     { id: 'LUNCH', si: 'දවල් ආහාරය', ta: 'மதிய உணவு', isMorning: false }
   ];
-
-  const activeMealType = currentHour < 12 ? 'BREAKFAST' : 'LUNCH';
-  const currentMeal = meals.find(m => m.mealType === activeMealType);
 
   return (
     <ScrollView className="flex-1 bg-emerald-50 px-6 pt-12">
@@ -71,16 +109,22 @@ export default function RequestNowScreen() {
       </TouchableOpacity>
 
       <Text className="text-3xl font-black text-emerald-900 mb-1">Meal Status</Text>
-      <Text className="text-emerald-600 font-bold mb-8">ආහාර වේලෙහි තත්ත්වය</Text>
+      <Text className="text-emerald-600 font-bold">ආහාර වේලෙහි තත්ත්වය</Text>
+      <Text className="text-emerald-500 text-xs mb-8">உணவு நிலை</Text>
 
       {/* 1. Meal Type Cards */}
       <View className="gap-y-4 mb-8">
         {mealTypes.map((type) => {
           const isLocked = type.isMorning ? currentHour >= 12 : currentHour < 12;
-          const isActiveInDB = meals.some(m => m.mealType === type.id);
+          const mealInDb = meals.find(m => m.mealType === type.id);
 
           return (
-            <View key={type.id} className={`rounded-[30px] p-5 border ${isLocked ? 'bg-gray-200 border-gray-300 opacity-60' : 'bg-white border-emerald-100 shadow-sm'}`}>
+            <View
+              key={type.id}
+              className={`rounded-[30px] p-5 border ${
+                isLocked ? 'bg-gray-200 border-gray-300 opacity-80' : 'bg-white border-emerald-100 shadow-sm'
+              }`}
+            >
               <View className="flex-row justify-between items-center">
                 <View className="flex-row items-center">
                   <View className={`p-3 rounded-xl ${isLocked ? 'bg-gray-300' : 'bg-emerald-100'}`}>
@@ -91,15 +135,18 @@ export default function RequestNowScreen() {
                     <Text className={`text-[10px] font-bold ${isLocked ? 'text-gray-400' : 'text-emerald-600'}`}>{type.si} / {type.ta}</Text>
                   </View>
                 </View>
-                {isActiveInDB && (
+                {mealInDb && (
                   <View className="bg-emerald-500 px-3 py-1 rounded-full">
-                    <Text className="text-white text-[10px] font-bold">REQUESTED</Text>
+                    <Text className="text-white text-[10px] font-bold uppercase">{mealInDb.status}</Text>
                   </View>
                 )}
               </View>
+
               {isLocked && (
                 <View className="mt-3 pt-3 border-t border-gray-300">
-                   <Text className="text-[10px] text-gray-500 font-bold uppercase">Not available now / දැනට ලබාගත නොහැක</Text>
+                   <Text className="text-[10px] text-gray-500 font-bold uppercase">
+                    Not available now / දැනට ලබාගත නොහැක / தற்போது கிடைக்கவில்லை
+                  </Text>
                 </View>
               )}
             </View>
@@ -107,38 +154,44 @@ export default function RequestNowScreen() {
         })}
       </View>
 
-      {/* 2. Request Button OR OTP Display */}
+      {/* 2. OTP and Action Button Container */}
       {!hasError ? (
         <View className="bg-white rounded-[40px] p-8 shadow-xl shadow-emerald-200 border border-emerald-100">
           
-          {/* If the canteen ACCEPTED the meal, show the OTP */}
-          {currentMeal?.status === 'ACCEPTED' && currentMeal?.otp ? (
-            <View className="items-center py-4">
-              <ShieldCheck size={40} color="#059669" />
-              <Text className="text-emerald-800 font-bold text-lg mt-2">Your OTP / රහස් කේතය</Text>
-              <View className="bg-emerald-100 px-8 py-4 rounded-3xl mt-4 border-2 border-dashed border-emerald-500">
-                <Text className="text-5xl font-black text-emerald-900 tracking-widest">{currentMeal.otp}</Text>
-              </View>
-              <Text className="text-slate-500 text-xs mt-4 text-center">Show this code to the canteen staff</Text>
+          {/* OTP VIEW: Only shows when Canteen accepts */}
+          {currentMeal?.status === 'ACCEPTED' && (
+            <View className="mb-6 p-6 bg-amber-50 border-2 border-dashed border-amber-300 rounded-3xl items-center">
+              <Ticket size={32} color="#b45309" />
+              <Text className="text-amber-600 font-bold text-xs mt-2 uppercase">Your OTP / ඔබගේ කේතය / உங்கள் குறியீடு</Text>
+              <Text className="text-5xl font-black text-amber-700 tracking-[10px] my-3">{currentMeal.otp}</Text>
+              <Text className="text-[10px] text-amber-500 text-center font-medium">Show this to the canteen staff</Text>
             </View>
-          ) : (
-            /* Otherwise show the Request Button */
-            <TouchableOpacity 
-              onPress={handleRequestMeal}
-              disabled={loading || currentMeal?.status === 'ACTIVE'}
-              className={`w-full py-5 rounded-3xl flex-row items-center justify-center shadow-lg ${currentMeal?.status === 'ACTIVE' ? 'bg-slate-400' : 'bg-emerald-600 shadow-emerald-400'}`}
-            >
-              <View className="items-center">
-                <Text className="text-white font-black text-xl uppercase">
-                  {currentMeal?.status === 'ACTIVE' ? 'Waiting for Canteen...' : `Request ${activeMealType}`}
-                </Text>
-                <Text className="text-emerald-100 font-bold text-[10px]">
-                  {currentMeal?.status === 'ACTIVE' ? 'කරුණාකර රැඳී සිටින්න' : 'ආහාරය ඉල්ලන්න / உணவைக் கோருங்கள்'}
-                </Text>
-              </View>
-              {loading ? <ActivityIndicator color="white" className="ml-4" /> : <Send size={24} color="white" className="ml-4" />}
-            </TouchableOpacity>
           )}
+
+          <TouchableOpacity 
+            onPress={() => {
+              if (currentMeal?.status === 'ACCEPTED' || currentMeal?.status === 'OTP_VERIFIED') {
+                router.push(`/verify/${currentMealId}` as any);
+              } else {
+                handleRequestMeal();
+              }
+            }}
+            disabled={loading || currentMeal?.status === 'ACTIVE' || currentMeal?.status === 'ISSUED'}
+            className={`${currentMeal?.status === 'ACTIVE' ? 'bg-slate-400' : 'bg-emerald-600'} w-full py-5 rounded-3xl flex-row items-center justify-center shadow-lg shadow-emerald-400`}
+          >
+            <View className="items-center">
+              <Text className="text-white font-black text-xl uppercase text-center">
+                {currentMeal?.status === 'ACTIVE' ? 'Waiting for Canteen...' : 
+                 currentMeal?.status === 'ACCEPTED' ? 'Enter OTP' : `Request ${activeMealType}`}
+              </Text>
+              <Text className="text-emerald-100 font-bold text-[10px] text-center">
+                {currentMeal?.status === 'ACTIVE' ? 'කරුණාකර රැඳී සිටින්න / காத்திருக்கவும்' : 
+                 currentMeal?.status === 'ACCEPTED' ? 'කේතය තහවුරු කරන්න / குறியீட்டைச் சரிபார்க்கவும்' : 
+                 'ආහාරය ඉල්ලන්න / உணவைக் கோருங்கள்'}
+              </Text>
+            </View>
+            {loading ? <ActivityIndicator color="white" className="ml-4" /> : <Send size={24} color="white" className="ml-4" />}
+          </TouchableOpacity>
         </View>
       ) : (
         <View className="items-center py-10 bg-white rounded-[40px] border border-red-100">
@@ -151,12 +204,13 @@ export default function RequestNowScreen() {
         </View>
       )}
 
-      {/* Footer Clock */}
+      {/* Real-time Clock */}
       <View className="items-center mt-12 mb-10">
         <Clock size={20} color="#059669" />
         <Text className="text-emerald-800 font-black mt-2 text-2xl">
           {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
         </Text>
+        <Text className="text-emerald-600 font-bold text-[10px]">CURRENT TIME / වත්මන් වේලාව / தற்போதைய நேரம்</Text>
       </View>
     </ScrollView>
   );
