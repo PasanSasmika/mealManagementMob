@@ -33,16 +33,16 @@ export default function MyOrderScreen() {
   const handleCancel = async (mealType: string) => {
     Alert.alert(
       "Confirm Cancellation",
-      "Are you sure you want to cancel tomorrow's booking?",
+      "Are you sure you want to cancel tomorrow's booking? / ඔබට හෙට දින වෙන්කිරීම ඉවත් කිරීමට අවශ්‍යද? / நீங்கள் நாளைய முன்பதிவை ரத்து செய்ய விரும்புகிறீர்களா?",
       [
-        { text: "No", style: "cancel" },
+        { text: "No / නැත", style: "cancel" },
         { 
-          text: "Yes, Cancel", 
+          text: "Yes, Cancel / ඔව්", 
           style: "destructive",
           onPress: async () => {
             try {
               await api.delete('/meals/cancel-tomorrow', { data: { mealType } });
-              Alert.alert("Success", "Booking cancelled successfully.");
+              Alert.alert("Success", "Booking cancelled successfully / ඔබගේ වෙන්කිරීම ඉවත් කරන ලදි / உங்கள் முன்பதிவு ரத்து செய்யப்பட்டது");
               fetchMyOrders(); // Refresh list
             } catch (error: any) {
               Alert.alert("Cannot Cancel", error.response?.data?.message || "Something went wrong");
@@ -154,7 +154,7 @@ export default function MyOrderScreen() {
           ListEmptyComponent={
             <View className="items-center mt-20 opacity-30">
               <AlertCircle size={60} color="#64748b" />
-              <Text className="text-slate-500 font-bold mt-4">No active bookings found</Text>
+              <Text className="text-slate-500 font-bold mt-4">සක්‍රීය වෙන්කිරීම් කිසිවක් හමු නොවීය / No active bookings found / செயலில் உள்ள முன்பதிவுகள் எதுவும் கிடைக்கவில்லை</Text>
             </View>
           }
         />
