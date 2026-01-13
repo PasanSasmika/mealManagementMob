@@ -30,4 +30,8 @@ requestNow: (data: { action: boolean }) => api.post('/meals/request-now', data),
 choosePayment: (requestId: string, paymentType: string) => 
     api.patch('/meals/select-payment', { requestId, paymentType }),
 
+cancelTomorrow: (mealType: string) => api.delete('/meals/cancel-tomorrow', { data: { mealType } }),
+
+  getMyMeals: (days: number = 10) => api.get(`/meals/my-meals?days=${days}`),
+
 };

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Utensils, QrCode, LogOut, User } from 'lucide-react-native';
+import { Utensils, QrCode, LogOut, User, ClipboardList } from 'lucide-react-native'; // Added ClipboardList
 import { LinearGradient } from 'expo-linear-gradient'; 
 import "../global.css";
 
@@ -34,20 +34,29 @@ export default function EmployeeDashboard() {
         end={{ x: 1, y: 1 }}
         className="pt-16 pb-12 px-8 rounded-b-[50px] shadow-2xl shadow-emerald-900"
       >
-        <View className="flex-row justify-between items-start">
-          <View className="flex-row items-center">
+        <View className="flex-row justify-between items-center">
+          <View className="flex-row items-center flex-1">
             <View className="bg-white/20 p-3 rounded-2xl border border-white/30 mr-4">
               <User size={32} color="white" />
             </View>
-            <View>
+            <View className="flex-1">
               <Text className="text-emerald-50 font-medium text-xs tracking-wider">
-                Welcome / ආයුබෝවන් / வரவேற்கிறோம்
+                Welcome / ආයුබෝවන්
               </Text>
-              <Text className="text-3xl font-black text-white capitalize">
+              <Text className="text-3xl font-black text-white capitalize" numberOfLines={1}>
                 {firstName}
               </Text>
             </View>
           </View>
+
+          {/* New "My Order" Button - Top Right */}
+          <TouchableOpacity 
+            onPress={() => router.push('/my-order')}
+            className="bg-white/20 p-3 rounded-2xl border border-white/40 items-center justify-center ml-2"
+          >
+            <ClipboardList size={24} color="white" />
+            <Text className="text-white text-[8px] font-bold mt-1">My Orders</Text>
+          </TouchableOpacity>
         </View>
       </LinearGradient>
 
@@ -87,10 +96,10 @@ export default function EmployeeDashboard() {
             </View>
           </TouchableOpacity>
 
-          {/* Refined Logout Button */}
+          {/* Logout Button */}
           <TouchableOpacity 
             onPress={handleLogout}
-            className="mt-28 border-2 border-red-100 bg-red-50/30 p-6 rounded-[35px] flex-row items-center justify-center"
+            className="mt-20 border-2 border-red-100 bg-red-50/30 p-6 rounded-[35px] flex-row items-center justify-center"
           >
             <LogOut size={22} color="#ef4444" className="mr-4" />
             <View className="items-center">
