@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mealmanagemob",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -20,24 +20,17 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.pasansasmika.mealManageMob"
     },
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ceddbc"
+    },
     "web": {
       "output": "static",
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ceddbc",
-          "dark": {
-            "backgroundColor": "#ceddbc"
-          }
-        }
-      ]
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true,
