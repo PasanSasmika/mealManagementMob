@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { api } from '../src/services/api';
-import { User, Check, X, Coffee } from 'lucide-react-native';
+import { User, Check, X, Coffee, LogOut } from 'lucide-react-native';
 import "../global.css";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 
 export default function CanteenDashboard() {
   const [activeRequests, setActiveRequests] = useState<any[]>([]); 
   const [verifiedRequests, setVerifiedRequests] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const fetchRequests = async () => {
     try {
@@ -46,6 +49,11 @@ export default function CanteenDashboard() {
     } catch (error) {
       Alert.alert("Error", "Could not process request.");
     }
+  };
+
+  const handleLogout = async () => {
+    await AsyncStorage.clear();
+    router.replace('/login');
   };
 
   const handleFinalize = async (requestId: string, issue: boolean) => {
@@ -129,7 +137,7 @@ export default function CanteenDashboard() {
             >
               <View className="items-center">
                 <Text className="text-white font-black">ISSUE MEAL</Text>
-                <Text className="text-white text-[9px]">ආහාරය නිකුත් කරන්න / உணவை வழங்குங்கள்</Text>
+                <Text className="text-white text-[9px] pl-5 p-2">ආහාරය නිකුත් කරන්න / உணவை வழங்குங்கள்</Text>
               </View>
             </TouchableOpacity>
 
@@ -142,6 +150,17 @@ export default function CanteenDashboard() {
           </View>
         </View>
       ))}
+
+      <TouchableOpacity 
+            onPress={handleLogout}
+            className="mt-36 border-2 border-red-100 bg-red-50/30 p-6 rounded-[35px] flex-row items-center justify-center"
+          >
+            <LogOut size={22} color="#ef4444" className="mr-4" />
+            <View className="items-center">
+              <Text className="text-red-600 font-black text-lg">Logout</Text>
+              <Text className="text-red-400 font-bold text-[10px]">පද්ධතියෙන් ඉවත් වන්න / வெளியேறவும்</Text>
+            </View>
+          </TouchableOpacity>
       <View className="h-20" />
     </ScrollView>
   );

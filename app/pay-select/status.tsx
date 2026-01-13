@@ -91,6 +91,7 @@ export default function MealStatusScreen() {
     </View>
 
     <TouchableOpacity className="mt-10 border-2 border-red-200 px-10 py-3 rounded-2xl"
+    onPress={() => router.replace("/employee-dashboard")}
     >
       <Text className="text-red-500 font-bold">Go Back</Text>
     </TouchableOpacity>

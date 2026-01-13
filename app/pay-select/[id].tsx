@@ -57,7 +57,7 @@ export default function PaySelectScreen() {
                 <Text className="text-emerald-600 font-bold text-[10px] uppercase">දැන් ගෙවන්න / இப்போது செலுத்துங்கள்</Text>
               </View>
             </View>
-            <Text className="text-gray-500 text-sm">Pay instantly using digital wallet/card.</Text>
+            <Text className="text-gray-500 text-sm">දැන් මුදල් ගෙවා ආහාර ලබා ගනී / Now pay and collect the meal/ இப்போது பணம் செலுத்தி உணவை பெறுங்கள் / </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -73,7 +73,7 @@ export default function PaySelectScreen() {
                 <Text className="text-slate-500 font-bold text-[10px] uppercase">පසුව ගෙවන්න / பின்னர் செலுத்துங்கள்</Text>
               </View>
             </View>
-            <Text className="text-gray-500 text-sm">Settle at counter or monthly payroll.</Text>
+            <Text className="text-gray-500 text-sm">Payment will be made later / පසුව ගෙවීම සිදුකරයි / பின்னர் கட்டணம் செலுத்தப்படும்</Text>
           </TouchableOpacity>
         </View>
       )}

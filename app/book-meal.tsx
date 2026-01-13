@@ -81,11 +81,11 @@ export default function BookMealScreen() {
   try {
     // Send the normalized UTC dates
     await mealService.bookMeals(normalizedSelections);
-    Alert.alert("Success", "Meals pre-booked successfully!", [
+    Alert.alert("Success", "Meals pre-booked successfully / ආහාර ඇණවුම සාර්ථකව ලබාදෙන ලදි / உங்கள் உணவு ஆர்டர் வெற்றிகரமாக செய்யப்பட்டுவிட்டது", [
       { text: "OK", onPress: () => router.back() }
     ]);
   } catch (error) {
-    Alert.alert("Failed", "Could not save your meal selection.");
+    Alert.alert("Failed", "Could not save your meal selection. / ආහාර ඇණවුම අසාර්ථකයි. / உணவு ஆர்டர் தோல்வியடைந்தது");
   } finally {
     setLoading(false);
   }
